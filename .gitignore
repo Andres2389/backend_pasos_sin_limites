@@ -1,0 +1,47 @@
+# Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+dist/
+.env
+
+# Logs
+logs
+*.log
+log.txt
+*.log.*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor settings
+.vscode/
+.idea/
+
+# Frontend (Vite, React)
+frontend/node_modules/
+frontend/dist/
+frontend/.env.local
+frontend/.env.production
+frontend/.env.development
+
+# Backend
+backend/node_modules/
+backend/.env
+backend/.DS_Store
+backend/coverage/
+backend/dist/
+
+# Optional: coverage & test reports
+coverage/
+*.lcov
+jest.config.js
+
+# Optional: ignore build output if separate
+build/
+
+# Misc
+*.swp
+*.swo

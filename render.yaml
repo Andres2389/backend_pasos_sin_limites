@@ -1,0 +1,21 @@
+# render.yaml (en la raíz de tu repo)
+services:
+  # ------------ BACKEND ------------
+  - type: web
+    name: costehuilense-backend
+    env: node
+    branch: main
+    rootDir: backend-mongodb
+    buildCommand: npm install
+    startCommand: npm run start
+    envVars:
+      - key: PORT
+        value: "5000"
+      - key: MONGODB_URI
+        sync: false
+      - key: EMAIL_USER
+        sync: false
+      - key: EMAIL_APP_PASS
+        sync: false
+      - key: FRONTEND_URL
+        value: https://testingfrontend-6xbm.onrender.com
