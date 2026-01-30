@@ -9,9 +9,10 @@ const orderItemSchema = new mongoose.Schema({
   },
   nombre: { type: String, required: true },
   cantidad: { type: Number, required: true },
-  valorUnitario: { type: Number, required: true },     // antes "valor"
-  subTotal: { type: Number, required: true },           // cantidad * valorUnitario
+  valorUnitario: { type: Number, required: true },
+  subTotal: { type: Number, required: true },
   imagen: { type: String },
+  talla: { type: String }, // <-- NUEVO: talla seleccionada (opcional)
 });
 
 const orderSchema = new mongoose.Schema(
@@ -35,8 +36,8 @@ const orderSchema = new mongoose.Schema(
     },
     estado: {
       type: String,
-      enum: ["Pendiente", "Completado", "Cancelado"],
-      default: "Pendiente",
+      enum: ["PENDING", "DELIVERED", "CANCELLED", "PENDING_PAYMENT","ENTREGADO"],
+      default: "PENDING",
     },
   },
   { timestamps: true }

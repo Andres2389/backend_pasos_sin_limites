@@ -2,7 +2,7 @@
 services:
   # ------------ BACKEND ------------
   - type: web
-    name: costehuilense-backend
+    name: pasos-sin-limites-backend
     env: node
     branch: main
     rootDir: backend-mongodb

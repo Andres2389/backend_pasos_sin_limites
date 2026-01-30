@@ -22,12 +22,11 @@ export const register = async (req, res) => {
 
     // Enviar correo de bienvenida
     const html = `
-      <h2>¡Bienvenido a costehuilense, ${nombre}!</h2>
+      <h2>¡Bienvenido a  pasos sin limites, ${nombre}!</h2>
       <p>Tu cuenta ha sido creada exitosamente con el correo <strong>${correo}</strong>.</p>
       <p>Gracias por confiar en nosotros.</p>
     `;
-    await sendEmail(correo, '🎉 Bienvenido a costehuilense', html);
-
+    await sendEmail(correo, '🎉 Bienvenido a pasos sin limites', html);
     const userWithoutPassword = {
       _id: newUser._id,
       nombre: newUser.nombre,

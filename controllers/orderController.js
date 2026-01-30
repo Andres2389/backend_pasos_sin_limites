@@ -1,3 +1,31 @@
+// Cancelar pedido
+export const cancelarPedido = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const userId = (req.user && req.user._id) || req.body.userId;
+    const userRol = (req.user && req.user.rol) || req.body.rol;
+    const order = await Order.findById(id).populate("user");
+    if (!order) {
+      return res.status(404).json({ message: "Pedido no encontrado." });
+    }
+    if (order.estado === "CANCELLED") {
+      return res.status(400).json({ message: "El pedido ya está cancelado." });
+    }
+    order.estado = "CANCELLED";
+    await order.save();
+    // Si el rol es admin, enviar correo al usuario
+    if (userRol === "admin") {
+      const html = `<h1>Hola ${order.user.nombre},</h1>
+        <p>Tu pedido <strong>${order.codigoRecogida}</strong> ha sido cancelado por el administrador.</p>
+        <p>Si tienes dudas, contáctanos.</p>`;
+      await sendEmail(order.user.correo, "Pedido Cancelado", html);
+    }
+    return res.json({ message: "Pedido cancelado correctamente.", order });
+  } catch (error) {
+    console.error("Error en cancelarPedido:", error);
+    return res.status(500).json({ message: "Error interno del servidor." });
+  }
+};
 // controllers/orderController.js
 import mongoose from "mongoose";
 import Order from "../models/Order.js";
@@ -29,22 +57,22 @@ export const createOrder = async (req, res) => {
       return res.status(400).json({ message: "El carrito está vacío." });
     }
 
-    // Construir detalle de cada item y validar stock
+    // Construir detalle de cada item y validar stock, incluyendo talla si existe
     const orderItems = await Promise.all(
-      items.map(async ({ productId, cantidad }) => {
-        const product = await Product.findById(productId);
+      items.map(async (item) => {
+        const product = await Product.findById(item.productId);
         if (!product) {
-          throw new Error(`Producto no encontrado: ${productId}`);
+          throw new Error(`Producto no encontrado: ${item.productId}`);
         }
-        if (product.cantidad < cantidad) {
+        if (product.cantidad < item.cantidad) {
           throw new Error(`Stock insuficiente para ${product.nombre}`);
         }
         return {
+          ...item,
           product: product._id,
           nombre: product.nombre,
-          cantidad,
           valorUnitario: product.valor,
-          subTotal: cantidad * product.valor,
+          subTotal: item.cantidad * product.valor,
         };
       })
     );
@@ -62,7 +90,7 @@ export const createOrder = async (req, res) => {
       items: orderItems,
       total,
       codigoRecogida: codigoPedido,
-      estado: "Pendiente",
+      estado: "PENDING",
     });
     await newOrder.save();
 
@@ -78,9 +106,9 @@ export const createOrder = async (req, res) => {
       </ul>
       <p><strong>Total:</strong> $${total.toFixed(2)}</p>
       <p><strong>Código de tu pedido:</strong> <h2>${codigoPedido}</h2></p>
-      <p>Presenta este código en el restaurante para recoger tu pedido.</p>
+      <p>Presenta este código en la tienda para recoger tu pedido.</p>
     `;
-    await sendEmail(user.correo, "Tu pedido en costehuilense", html);
+    await sendEmail(user.correo, "Tu pedido en Pasos Sin Límites", html);
 
     // Responder al cliente
     return res.status(201).json({
@@ -97,7 +125,7 @@ export const createOrder = async (req, res) => {
 
 export const getMyOrders = async (req, res) => {
   try {
-    // 1) Si hay middleware de auth, usa req.user._id, si no, usa query
+    // Usa req.query.userId si no hay autenticación
     const userId = (req.user && req.user._id) || req.query.userId;
     if (!userId) {
       return res.status(400).json({ message: "No se proporcionó usuario." });
@@ -144,12 +172,25 @@ export const deliverOrder = async (req, res) => {
       return res.status(400).json({ message: "Código de recogida incorrecto." });
     }
 
-    // 3) Sólo pendientes
-    if (order.estado !== "Pendiente") {
+    // 3) Solo pedidos PENDIENTE pueden ser entregados
+    if (order.estado !== "PENDIENTE") {
       return res.status(400).json({ message: `Pedido ya está ${order.estado}.` });
     }
 
-    // 4) Descontar stock de cada producto
+    // 4) Validar stock suficiente y descontar solo si es posible y solo una vez
+    // (Evita descuentos duplicados y stock negativo)
+    const productos = await Promise.all(
+      order.items.map(async ({ product, cantidad }) => {
+        const prod = await Product.findById(product._id);
+        if (!prod) throw new Error(`Producto no encontrado: ${product._id}`);
+        if (prod.cantidad < cantidad) {
+          throw new Error(`Stock insuficiente para ${prod.nombre}. Disponible: ${prod.cantidad}, solicitado: ${cantidad}`);
+        }
+        return prod;
+      })
+    );
+
+    // Descontar stock solo si el pedido pasa a ENTREGADO
     await Promise.all(
       order.items.map(async ({ product, cantidad }) => {
         await Product.findByIdAndUpdate(product._id, {
@@ -158,15 +199,16 @@ export const deliverOrder = async (req, res) => {
       })
     );
 
-    // 5) Marcar como completado
-    order.estado = "Completado";
+    // 5) Marcar como ENTREGADO SOLO si no estaba ya entregado
+    order.estado = "ENTREGADO";
     await order.save();
+    console.log(`[PEDIDOS] Pedido ${order._id} marcado como ENTREGADO a las ${order.updatedAt}`);
 
     // 6) Notificar por correo
     const html = `
       <h1>Hola ${order.user.nombre},</h1>
       <p>Tu pedido <strong>${order.codigoRecogida}</strong> ha sido entregado.</p>
-      <p>¡Gracias por confiar en costehuilense!</p>
+      <p>¡Gracias por confiar en Pasos Sin Límites!</p>
     `;
     await sendEmail(order.user.correo, "Pedido Entregado", html);
 

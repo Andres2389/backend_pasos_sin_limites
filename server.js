@@ -5,20 +5,36 @@ import connectDB from './config/db.js';
 import authRoutes from './routes/authRoutes.js';
 import productRoutes from './routes/productRoutes.js';
 import OrderRoutes from './routes/orderRoutes.js';
+import SalesRoutes from './routes/salesRoutes.js';
+import inventoryRoutes from './routes/inventoryRoutes.js';
+import reportRoutes from './routes/reportRoutes.js';
+import paymentRoutes from './routes/paymentRoutes.js';
 
 
 dotenv.config();
 connectDB();
 
 const app = express();
+
 app.use(cors());
 app.use(express.json());
 
+// =========================
+// RUTAS
+// =========================
 app.use('/api', authRoutes);
 app.use('/api/productos', productRoutes);
 app.use('/api/orders', OrderRoutes);
 app.use('/uploads', express.static('uploads'));
+app.use('/api/sales', SalesRoutes);
+app.use('/api/inventory', inventoryRoutes);
+app.use('/api/reports', reportRoutes);
+app.use('/api/payments', paymentRoutes);
 
+
+// =========================
+// PUERTO
+// =========================
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`Servidor corriendo en: http://localhost:${PORT}`);

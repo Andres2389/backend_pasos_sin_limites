@@ -1,7 +1,11 @@
+
 import express from "express";
-import { createOrder, getMyOrders, getAllOrders, deliverOrder } from "../controllers/orderController.js";
+import { createOrder, getMyOrders, getAllOrders, deliverOrder, cancelarPedido } from "../controllers/orderController.js";
 
 const router = express.Router();
+
+// Cancelar pedido (admin y user)
+router.put("/:id/cancel", cancelarPedido);
 
 // Crear un nuevo pedido (genera código de 6 dígitos)
 router.post("/", createOrder);
