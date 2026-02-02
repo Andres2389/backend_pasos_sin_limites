@@ -18,4 +18,4 @@ services:
       - key: EMAIL_APP_PASS
         sync: false
       - key: FRONTEND_URL
-        value: https://testingfrontend-6xbm.onrender.com
+        value: https://frontend-pasos-sin-limites.onrender.com/
