@@ -172,10 +172,7 @@ export const deliverOrder = async (req, res) => {
       return res.status(400).json({ message: "Código de recogida incorrecto." });
     }
 
-    // 3) Solo pedidos PENDIENTE pueden ser entregados
-    if (order.estado !== "PENDIENTE") {
-      return res.status(400).json({ message: `Pedido ya está ${order.estado}.` });
-    }
+    // 3) Permitir entregar el pedido independientemente del estado
 
     // 4) Validar stock suficiente y descontar solo si es posible y solo una vez
     // (Evita descuentos duplicados y stock negativo)
