@@ -2,7 +2,7 @@ import { MercadoPagoConfig, Preference, Payment } from "mercadopago";
 import Order from "../models/Order.js";
 
 /* =========================
-   CONFIGURACIÓN MERCADO PAGO
+   CONFIG MERCADO PAGO
 ========================= */
 const client = new MercadoPagoConfig({
   accessToken: process.env.MP_ACCESS_TOKEN,
@@ -12,7 +12,7 @@ const preferenceClient = new Preference(client);
 const paymentClient = new Payment(client);
 
 /* =========================
-   CREAR PREFERENCIA DE PAGO
+   CREAR PREFERENCIA
 ========================= */
 export const createMercadoPagoPreference = async (req, res) => {
   try {
@@ -29,17 +29,14 @@ export const createMercadoPagoPreference = async (req, res) => {
 
     if (!["PENDING", "PENDIENTE"].includes(order.estado)) {
       return res.status(400).json({
-        message: `La orden no está pendiente. Estado actual: ${order.estado}`,
+        message: `Orden no pendiente (${order.estado})`,
       });
     }
 
-    if (!order.total || isNaN(order.total) || Number(order.total) <= 0) {
+    if (!order.total || Number(order.total) <= 0) {
       return res.status(400).json({ message: "Total inválido" });
     }
 
-    /* =========================
-       PREFERENCIA
-    ========================= */
     const preference = {
       items: [
         {
@@ -59,88 +56,53 @@ export const createMercadoPagoPreference = async (req, res) => {
       auto_return: "approved",
 
       external_reference: order._id.toString(),
-
-      payer: {
-        email: "test_user_123456@testuser.com", // SOLO PARA PRUEBAS
-      },
     };
 
-    const response = await preferenceClient.create({
-      body: preference,
-    });
+    const response = await preferenceClient.create({ body: preference });
 
-    return res.status(200).json({
+    return res.json({
       ok: true,
-      preferenceId: response.id,
-
-      // 👉 USAR ESTE EN PRUEBAS
-      sandbox_init_point: response.sandbox_init_point,
-
-      // 👉 USAR ESTE EN PRODUCCIÓN
-      init_point: response.init_point,
+      init_point: response.init_point, // ✅ SOLO PRODUCCIÓN
     });
   } catch (error) {
-    console.error("❌ Mercado Pago createPreference error:", error);
-
-    return res.status(500).json({
+    console.error("❌ Mercado Pago:", error);
+    res.status(500).json({
       ok: false,
-      message: "Error al crear preferencia de Mercado Pago",
+      message: "Error Mercado Pago",
       error: error.message,
     });
   }
 };
 
 /* =========================
-   WEBHOOK MERCADO PAGO
+   WEBHOOK
 ========================= */
 export const mercadoPagoWebhook = async (req, res) => {
   try {
     const { type, data } = req.body;
 
-    if (type !== "payment" || !data?.id) {
-      return res.status(200).json({ message: "Evento ignorado" });
-    }
+    if (type !== "payment") return res.sendStatus(200);
 
-    const paymentInfo = await paymentClient.get({ id: data.id });
-
-    const { status, external_reference } = paymentInfo;
-
-    if (!external_reference) {
-      return res.status(400).json({
-        message: "external_reference vacío",
-      });
-    }
+    const payment = await paymentClient.get({ id: data.id });
+    const { status, external_reference } = payment;
 
     const order = await Order.findById(external_reference);
-    if (!order) {
-      return res.status(404).json({ message: "Orden no encontrada" });
-    }
+    if (!order) return res.sendStatus(404);
 
-    let nuevoEstado = order.estado;
+    const estados = {
+      approved: "PAGADO",
+      rejected: "CANCELADO",
+      cancelled: "CANCELADO",
+      pending: "PENDIENTE",
+      in_process: "PENDIENTE",
+    };
 
-    switch (status) {
-      case "approved":
-        nuevoEstado = "PAGADO";
-        break;
-      case "rejected":
-      case "cancelled":
-        nuevoEstado = "CANCELADO";
-        break;
-      case "pending":
-      case "in_process":
-        nuevoEstado = "PENDIENTE";
-        break;
-    }
+    order.estado = estados[status] || order.estado;
+    await order.save();
 
-    if (order.estado !== nuevoEstado) {
-      order.estado = nuevoEstado;
-      await order.save();
-      console.log(`✅ Orden ${order._id} actualizada a ${nuevoEstado}`);
-    }
-
-    res.status(200).json({ message: "Webhook procesado" });
-  } catch (error) {
-    console.error("❌ Mercado Pago webhook error:", error);
-    res.status(500).json({ message: "Error en webhook" });
+    res.sendStatus(200);
+  } catch (err) {
+    console.error("❌ Webhook MP:", err);
+    res.sendStatus(500);
   }
 };
