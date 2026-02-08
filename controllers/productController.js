@@ -27,7 +27,7 @@ export const getProductsGallery = async (req, res) => {
 };
 
 export const createProduct = async (req, res) => {
-  const { nombre, cantidad, valor, descripcion } = req.body;
+  const { nombre, cantidad, valor, descripcion, talla } = req.body;
   const imagen = req.file?.filename;
 
   try {
@@ -38,7 +38,7 @@ export const createProduct = async (req, res) => {
       valor: Number(valor),
       descripcion,
       imagen,
-      
+      talla: Array.isArray(talla) ? talla : typeof talla === 'string' ? talla.split(',').map(t => t.trim()) : [],
     });
 
     await nuevo.save();
@@ -59,7 +59,7 @@ export const createProduct = async (req, res) => {
 
 export const updateProduct = async (req, res) => {
   try {
-    const { nombre, cantidad, valor, descripcion } = req.body;
+    const { nombre, cantidad, valor, descripcion, talla } = req.body;
     const product = await Product.findById(req.params.id);
 
     if (!product) {
@@ -78,6 +78,7 @@ export const updateProduct = async (req, res) => {
     product.cantidad = Number(cantidad);
     product.valor = Number(valor);
     product.descripcion = descripcion || "";
+    product.talla = Array.isArray(talla) ? talla : typeof talla === 'string' ? talla.split(',').map(t => t.trim()) : product.talla;
 
     await product.save();
     res.json({ message: 'Producto actualizado', producto: product });
