@@ -4,27 +4,8 @@ import path from 'path';
 
 export const getProducts = async (req, res) => {
   try {
-    // Paginación y búsqueda
-    const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 10;
-    const search = req.query.search || "";
-    const skip = (page - 1) * limit;
-
-    let filter = {};
-    if (search) {
-      filter = {
-        $or: [
-          { nombre: { $regex: search, $options: "i" } },
-          { descripcion: { $regex: search, $options: "i" } }
-        ]
-      };
-    }
-
-    const products = await Product.find(filter).skip(skip).limit(limit);
-    const total = await Product.countDocuments(filter);
-
-    // Mantener respuesta actual y solo extenderla
-    res.json({ products, total, page, limit });
+    const products = await Product.find();
+    res.json(products);
   } catch {
     res.status(500).json({ message: 'Error al obtener productos' });
   }
