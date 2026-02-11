@@ -7,8 +7,26 @@ const router = express.Router();
 // Obtener historial de movimientos
 router.get('/movements', async (req, res) => {
   try {
-    const movements = await InventoryMovement.find().populate('product user').sort({ date: -1 });
-    res.json(movements);
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const search = req.query.search || "";
+    const skip = (page - 1) * limit;
+
+    let filter = {};
+    if (search) {
+      filter.$or = [
+        { note: { $regex: search, $options: "i" } },
+        { type: { $regex: search, $options: "i" } }
+      ];
+    }
+
+    const movements = await InventoryMovement.find(filter)
+      .populate('product user')
+      .sort({ date: -1 })
+      .skip(skip)
+      .limit(limit);
+    const total = await InventoryMovement.countDocuments(filter);
+    res.json({ movements, total, page, limit });
   } catch (err) {
     res.status(500).json({ message: 'Error al obtener movimientos' });
   }

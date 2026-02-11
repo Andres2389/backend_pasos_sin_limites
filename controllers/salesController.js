@@ -76,28 +76,48 @@ export const getDailySales = async (req, res) => {
       if (!user || user.rol !== 'admin') {
         return res.status(403).json({ message: 'Solo el administrador puede ver ventas diarias.' });
       }
-      // Ventas del día
+      // Ventas del día con paginación y búsqueda
       const start = new Date();
       start.setHours(0, 0, 0, 0);
       const end = new Date();
       end.setHours(23, 59, 59, 999);
-      const ventas = await Sale.find({
+      const page = parseInt(req.query.page) || 1;
+      const limit = parseInt(req.query.limit) || 10;
+      const search = req.query.search || "";
+      const skip = (page - 1) * limit;
+
+      let filter = {
         user: user._id,
         date: { $gte: start, $lte: end },
         status: 'completed',
-      }).populate('products.product');
+      };
+      if (search) {
+        filter.$or = [
+          { numeroVenta: { $regex: search, $options: "i" } },
+          // Buscar por nombre de producto
+          { 'products.nombre': { $regex: search, $options: "i" } }
+        ];
+      }
+
+      const ventas = await Sale.find(filter)
+        .populate('products.product')
+        .skip(skip)
+        .limit(limit);
+      const total = await Sale.countDocuments(filter);
+
       // Formatear respuesta
       const ventasFormateadas = ventas.map(v => ({
         _id: v._id,
         fecha: v.date,
         total: v.total,
+        numeroVenta: v.numeroVenta,
         productos: v.products.map(p => ({
           productId: p.product,
-          nombre: p.nombre,
+          nombre: p.product?.nombre || '',
           cantidad: p.quantity,
         })),
       }));
-      return res.json({ ventas: ventasFormateadas });
+      return res.json({ ventas: ventasFormateadas, total, page, limit });
     }
     // Si se pasa date, mostrar resumen de pedidos entregados (lógica original)
     const dateStr = req.query.date;
