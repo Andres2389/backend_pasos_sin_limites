@@ -31,13 +31,24 @@ export const createProduct = async (req, res) => {
   const imagen = req.file?.filename;
 
   try {
+    // 🔥 Manejo robusto de tallas
+    let tallasParseadas = [];
+
+    if (tallas) {
+      if (typeof tallas === "string") {
+        tallasParseadas = JSON.parse(tallas);
+      } else if (Array.isArray(tallas)) {
+        tallasParseadas = tallas;
+      }
+    }
+
     const nuevo = new Product({
       nombre,
       cantidad: Number(cantidad),
       valor: Number(valor),
       descripcion,
       imagen,
-      tallas: tallas ? JSON.parse(tallas) : [], // 🔥 importante
+      tallas: tallasParseadas,
     });
 
     await nuevo.save();
@@ -46,6 +57,7 @@ export const createProduct = async (req, res) => {
       message: "Producto creado correctamente",
       producto: nuevo,
     });
+
   } catch (error) {
     console.error("ERROR CREATE:", error);
     res.status(500).json({
@@ -54,7 +66,6 @@ export const createProduct = async (req, res) => {
     });
   }
 };
-
 
 export const updateProduct = async (req, res) => {
   try {
@@ -66,6 +77,7 @@ export const updateProduct = async (req, res) => {
       return res.status(404).json({ message: "Producto no encontrado" });
     }
 
+    // 🔥 Manejo imagen
     if (req.file) {
       if (product.imagen) {
         const oldPath = path.join("uploads", product.imagen);
@@ -78,8 +90,14 @@ export const updateProduct = async (req, res) => {
     product.cantidad = Number(cantidad);
     product.valor = Number(valor);
     product.descripcion = descripcion || "";
-    if (typeof tallas !== 'undefined') {
-      product.tallas = tallas ? JSON.parse(tallas) : [];
+
+    // 🔥 Manejo robusto de tallas
+    if (typeof tallas !== "undefined") {
+      if (typeof tallas === "string") {
+        product.tallas = JSON.parse(tallas);
+      } else if (Array.isArray(tallas)) {
+        product.tallas = tallas;
+      }
     }
 
     await product.save();
@@ -91,7 +109,6 @@ export const updateProduct = async (req, res) => {
     res.status(500).json({ message: "Error al actualizar producto" });
   }
 };
-
 
 export const deleteProduct = async (req, res) => {
   try {
