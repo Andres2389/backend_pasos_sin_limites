@@ -27,18 +27,17 @@ export const getProductsGallery = async (req, res) => {
 };
 
 export const createProduct = async (req, res) => {
-  const { nombre, cantidad, valor, descripcion } = req.body;
+  const { nombre, cantidad, valor, descripcion, tallas } = req.body;
   const imagen = req.file?.filename;
 
   try {
-    
     const nuevo = new Product({
       nombre,
       cantidad: Number(cantidad),
       valor: Number(valor),
       descripcion,
       imagen,
-      
+      tallas: tallas ? JSON.parse(tallas) : [], // 🔥 importante
     });
 
     await nuevo.save();
@@ -59,16 +58,17 @@ export const createProduct = async (req, res) => {
 
 export const updateProduct = async (req, res) => {
   try {
-    const { nombre, cantidad, valor, descripcion } = req.body;
+    const { nombre, cantidad, valor, descripcion, tallas } = req.body;
+
     const product = await Product.findById(req.params.id);
 
     if (!product) {
-      return res.status(404).json({ message: 'Producto no encontrado' });
+      return res.status(404).json({ message: "Producto no encontrado" });
     }
 
     if (req.file) {
       if (product.imagen) {
-        const oldPath = path.join('uploads', product.imagen);
+        const oldPath = path.join("uploads", product.imagen);
         if (fs.existsSync(oldPath)) fs.unlinkSync(oldPath);
       }
       product.imagen = req.file.filename;
@@ -78,15 +78,18 @@ export const updateProduct = async (req, res) => {
     product.cantidad = Number(cantidad);
     product.valor = Number(valor);
     product.descripcion = descripcion || "";
+    product.tallas = tallas ? JSON.parse(tallas) : [];
 
     await product.save();
-    res.json({ message: 'Producto actualizado', producto: product });
+
+    res.json({ message: "Producto actualizado", producto: product });
 
   } catch (error) {
     console.error("ERROR UPDATE:", error);
-    res.status(500).json({ message: 'Error al actualizar producto' });
+    res.status(500).json({ message: "Error al actualizar producto" });
   }
 };
+
 
 export const deleteProduct = async (req, res) => {
   try {
