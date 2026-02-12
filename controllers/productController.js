@@ -30,15 +30,24 @@ export const createProduct = async (req, res) => {
   const { nombre, cantidad, valor, descripcion, tallas } = req.body;
   const imagen = req.file?.filename;
 
-  try {
-    // 🔥 Manejo robusto de tallas
-    let tallasParseadas = [];
+  // LOG: req.body
+  console.log("[createProduct] req.body:", req.body);
+  // LOG: req.file
+  console.log("[createProduct] req.file:", req.file);
 
+  try {
+    // Parse tallas correctamente
+    let tallasParsed = [];
     if (tallas) {
-      if (typeof tallas === "string") {
-        tallasParseadas = JSON.parse(tallas);
+      if (typeof tallas === 'string') {
+        try {
+          tallasParsed = JSON.parse(tallas);
+        } catch (e) {
+          console.warn("[createProduct] Error al parsear tallas:", e);
+          tallasParsed = [];
+        }
       } else if (Array.isArray(tallas)) {
-        tallasParseadas = tallas;
+        tallasParsed = tallas;
       }
     }
 
@@ -48,16 +57,21 @@ export const createProduct = async (req, res) => {
       valor: Number(valor),
       descripcion,
       imagen,
-      tallas: tallasParseadas,
+      tallas: tallasParsed,
     });
 
-    await nuevo.save();
+    // LOG: producto antes de guardar
+    console.log("[createProduct] Producto a guardar:", nuevo);
+
+    const resultado = await nuevo.save();
+
+    // LOG: resultado después de guardar
+    console.log("[createProduct] Resultado save:", resultado);
 
     res.status(201).json({
       message: "Producto creado correctamente",
-      producto: nuevo,
+      producto: resultado,
     });
-
   } catch (error) {
     console.error("ERROR CREATE:", error);
     res.status(500).json({
@@ -66,6 +80,7 @@ export const createProduct = async (req, res) => {
     });
   }
 };
+
 
 export const updateProduct = async (req, res) => {
   try {
@@ -77,7 +92,6 @@ export const updateProduct = async (req, res) => {
       return res.status(404).json({ message: "Producto no encontrado" });
     }
 
-    // 🔥 Manejo imagen
     if (req.file) {
       if (product.imagen) {
         const oldPath = path.join("uploads", product.imagen);
@@ -90,15 +104,7 @@ export const updateProduct = async (req, res) => {
     product.cantidad = Number(cantidad);
     product.valor = Number(valor);
     product.descripcion = descripcion || "";
-
-    // 🔥 Manejo robusto de tallas
-    if (typeof tallas !== "undefined") {
-      if (typeof tallas === "string") {
-        product.tallas = JSON.parse(tallas);
-      } else if (Array.isArray(tallas)) {
-        product.tallas = tallas;
-      }
-    }
+    product.tallas = tallas ? JSON.parse(tallas) : [];
 
     await product.save();
 
@@ -109,6 +115,7 @@ export const updateProduct = async (req, res) => {
     res.status(500).json({ message: "Error al actualizar producto" });
   }
 };
+
 
 export const deleteProduct = async (req, res) => {
   try {
