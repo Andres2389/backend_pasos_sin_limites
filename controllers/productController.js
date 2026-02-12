@@ -78,7 +78,9 @@ export const updateProduct = async (req, res) => {
     product.cantidad = Number(cantidad);
     product.valor = Number(valor);
     product.descripcion = descripcion || "";
-    product.tallas = tallas ? JSON.parse(tallas) : [];
+    if (typeof tallas !== 'undefined') {
+      product.tallas = tallas ? JSON.parse(tallas) : [];
+    }
 
     await product.save();
 
