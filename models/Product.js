@@ -4,7 +4,7 @@ const productSchema = new mongoose.Schema(
   {
     nombre: { type: String, required: true },
 
-    cantidad: { type: Number, required: true }, // stock general si lo usas
+    cantidad: { type: Number, required: true },
 
     valor: { type: Number, required: true },
 
@@ -12,9 +12,10 @@ const productSchema = new mongoose.Schema(
 
     imagen: { type: String },
 
-    // 🔥 NUEVO CAMPO
+    // 🔥 CORREGIDO
     tallas: {
-      type: [Number], // array de números
+      type: [Number],
+      required: true,
       default: [],
     },
   },

@@ -30,47 +30,24 @@ export const createProduct = async (req, res) => {
   const { nombre, cantidad, valor, descripcion, tallas } = req.body;
   const imagen = req.file?.filename;
 
-  // LOG: req.body
-  console.log("[createProduct] req.body:", req.body);
-  // LOG: req.file
-  console.log("[createProduct] req.file:", req.file);
-
   try {
-    // Parse tallas correctamente
-    let tallasParsed = [];
-    if (tallas) {
-      if (typeof tallas === 'string') {
-        try {
-          tallasParsed = JSON.parse(tallas);
-        } catch (e) {
-          console.warn("[createProduct] Error al parsear tallas:", e);
-          tallasParsed = [];
-        }
-      } else if (Array.isArray(tallas)) {
-        tallasParsed = tallas;
-      }
-    }
-
     const nuevo = new Product({
       nombre,
       cantidad: Number(cantidad),
       valor: Number(valor),
       descripcion,
       imagen,
-      tallas: tallasParsed,
+      // 🔥 FORZAMOS A NÚMEROS SIEMPRE
+      tallas: tallas
+        ? JSON.parse(tallas).map(Number)
+        : [],
     });
 
-    // LOG: producto antes de guardar
-    console.log("[createProduct] Producto a guardar:", nuevo);
-
-    const resultado = await nuevo.save();
-
-    // LOG: resultado después de guardar
-    console.log("[createProduct] Resultado save:", resultado);
+    await nuevo.save();
 
     res.status(201).json({
       message: "Producto creado correctamente",
-      producto: resultado,
+      producto: nuevo,
     });
   } catch (error) {
     console.error("ERROR CREATE:", error);
@@ -80,7 +57,6 @@ export const createProduct = async (req, res) => {
     });
   }
 };
-
 
 export const updateProduct = async (req, res) => {
   try {
@@ -104,7 +80,11 @@ export const updateProduct = async (req, res) => {
     product.cantidad = Number(cantidad);
     product.valor = Number(valor);
     product.descripcion = descripcion || "";
-    product.tallas = tallas ? JSON.parse(tallas) : [];
+
+    // 🔥 FORZAMOS NÚMEROS TAMBIÉN EN UPDATE
+    product.tallas = tallas
+      ? JSON.parse(tallas).map(Number)
+      : [];
 
     await product.save();
 
@@ -115,7 +95,6 @@ export const updateProduct = async (req, res) => {
     res.status(500).json({ message: "Error al actualizar producto" });
   }
 };
-
 
 export const deleteProduct = async (req, res) => {
   try {
