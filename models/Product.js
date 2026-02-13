@@ -14,9 +14,9 @@ const productSchema = new mongoose.Schema(
 
     // 🔥 CORREGIDO
     tallas: {
-      type: [Number],
+      type: String, // Guardamos como string JSON
       required: true,
-      default: [],
+      default: "",
     },
   },
   { timestamps: true }

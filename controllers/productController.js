@@ -37,10 +37,8 @@ export const createProduct = async (req, res) => {
       valor: Number(valor),
       descripcion,
       imagen,
-      // 🔥 FORZAMOS A NÚMEROS SIEMPRE
-      tallas: tallas
-        ? JSON.parse(tallas).map(Number)
-        : [],
+      tallas: tallas || "",
+
     });
 
     await nuevo.save();
@@ -80,11 +78,8 @@ export const updateProduct = async (req, res) => {
     product.cantidad = Number(cantidad);
     product.valor = Number(valor);
     product.descripcion = descripcion || "";
+    product.tallas = tallas || "";
 
-    // 🔥 FORZAMOS NÚMEROS TAMBIÉN EN UPDATE
-    product.tallas = tallas
-      ? JSON.parse(tallas).map(Number)
-      : [];
 
     await product.save();
 
