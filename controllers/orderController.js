@@ -69,6 +69,7 @@ export const createOrder = async (req, res) => {
         }
         return {
           ...item,
+          talla: typeof item.talla !== "undefined" && item.talla !== null ? item.talla : "",
           product: product._id,
           nombre: product.nombre,
           valorUnitario: product.valor,
